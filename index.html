@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Midterm Practical</title>
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+        integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+        crossorigin=""/>
+
+        <script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+        integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA=="
+        crossorigin=""></script>
+
+      <script type="text/javascript" src="dataS.js"></script>
+      <script type="text/javascript" src="dataC.js"></script>
+
+      <style type="text/css">
+        html, body { margin: 0; padding: 0; height: 100%; }
+        #map { min-height: 100%; }
+      </style>
+
+        <style>
+          .legend {
+              padding: 6px 8px;
+              line-height: 18px;
+              background: rgba(255,255,255,0.9);
+              box-shadow: 0 0 15px rgba(0,0,0,0.2);
+              border-radius: 5px;
+          }
+           .legend i {
+              width: 18px;
+              height: 18px;
+              float: left;
+              margin-right: 8px;
+              opacity: 0.7;
+          }
+        </style>
+
+        <link rel="icon" href="usa.png">
+
+    </head>
+
+    <body>
+
+        <div id="map"></div>
+
+        <script type="text/javascript">
+
+          var map = L.map('map', {
+            center: [38.40, -96.96],
+            zoom: 5
+          });
+
+          L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+             attribution: 'Map data © OpenStreetMap contributors, CC-BY-SA, Imagery © Mapbox',
+             maxZoom: 12,
+             minZoom: 5,
+             id: 'mapbox.light',
+             accessToken:'pk.eyJ1IjoiY3VyZW1hbmdvIiwiYSI6ImNpcTQ4cGFwbDAxbmVmd25vZGNiOTVzeGEifQ.GWZByYkIft6eMRha69C8nw'
+           }).addTo(map);
+
+           function getColor(value) {
+             return value > 22  ? '#a50f15':
+                    value > 18  ? '#de2d26':
+                    value > 15  ? '#fb6a4a':
+                    value > 13  ? '#fc9272':
+                    value > 11  ? '#fcbba1':
+                                  '#fee5d9';
+           }
+
+           function style(feature){
+               return {
+                   fillColor: getColor(feature.properties.per_aging),
+                   weight: 2,
+                   opacity: 1,
+                   color: 'gray',
+                   fillOpacity: 0.9
+               };
+           }
+
+           function highlightFeature(e) {
+
+               var feature = e.target;
+
+               feature.setStyle({
+                   weight: 7,
+                   color: '#000000',
+                   fillOpacity: 0.7
+               });
+
+
+               if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                   feature.bringToFront();
+               }
+           }
+
+           function onEachFeature(feature, layer) {
+             layer.on({
+               mouseover: highlightFeature,
+               mouseout: resetHighlight,
+             });
+           }
+
+           var states;
+           function resetHighlight(e) {
+             states.resetStyle(e.target);
+           }
+
+           states = L.geoJson(dataS, {
+               style:style,
+               onEachFeature: onEachFeature
+           }).bindPopup(function (layer){
+               return layer.feature.properties.NAME10
+                      + '<p>' + layer.feature.properties.per_aging.toString() + '% of state population </p>';
+           }).addTo(map);
+
+           var counties;
+           function resetHighlight(e) {
+             counties.resetStyle(e.target);
+           }
+
+           counties = L.geoJson(dataC, {
+               style:style,
+               onEachFeature: onEachFeature
+           }).bindPopup(function (layer){
+               return layer.feature.properties.NAMELSAD10
+                      + '<p>' + layer.feature.properties.per_aging.toString() + '% of county population </p>';
+           });
+
+           var legend = L.control({position: 'bottomright'});
+
+           legend.onAdd = function (map) {
+
+               var div = L.DomUtil.create('div', 'legend'),
+                   grades = [0, 11, 13, 15, 18, 22];
+               div.innerHTML = "<b>Percent Population <br> Age 65 Years and Over <br></b>";
+
+               for (var i = 0; i < grades.length; i++) {
+                   div.innerHTML +=
+                   '<i style="background:' + getColor(grades[i] + 1) + '"></i>' +
+                   grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+               }
+
+               return div;
+           };
+
+           legend.addTo(map);
+
+           var overlaymaps = {
+               "States": states,
+               "Counties": counties
+           };
+
+           L.control.layers(overlaymaps).addTo(map);
+
+        </script>
+   </body>
+</html>
